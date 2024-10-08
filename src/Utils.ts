@@ -847,4 +847,39 @@ export const getCiphers = () => [
   'aes-256-gcm',
 ];
 
+
 export * from './Hashnames';
+
+
+export const base64urlToArrayBuffer = (base64url: string): number[] => {
+  const base64Chars: string = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+  const base64: string = base64url.replace(/-/g, '+').replace(/_/g, '/')
+  const paddingLength: number = (4 - (base64.length % 4)) % 4
+  const paddedBase64: string = base64 + '='.repeat(paddingLength)
+
+  const bytes: number[] = []
+
+  for (let i = 0; i < paddedBase64.length; i += 4) {
+    const chunk: string = paddedBase64.slice(i, i + 4)
+    const encoded: number[] = chunk.split('').map(char => base64Chars.indexOf(char))
+
+    if (encoded[0] !== undefined && encoded[1] !== undefined) {
+      const byte1: number = (encoded[0] << 2) | (encoded[1] >> 4)
+      bytes.push(byte1)
+
+      if (encoded[2] !== undefined && encoded[2] !== -1) {
+        const byte2: number = ((encoded[1] & 15) << 4) | (encoded[2] >> 2)
+        bytes.push(byte2)
+
+        if (encoded[3] !== undefined && encoded[3] !== -1) {
+          const byte3: number = ((encoded[2] & 3) << 6) | encoded[3]
+          bytes.push(byte3)
+        }
+      }
+    } else {
+      throw new Error('Invalid base64 input: unexpected end of input')
+    }
+  }
+
+  return bytes
+}

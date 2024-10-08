@@ -15,6 +15,7 @@ import {
   type SubtleAlgorithm,
 } from './keys';
 import {
+  base64urlToArrayBuffer,
   type BinaryLike,
   type BufferLike,
   bufferLikeToArrayBuffer,
@@ -32,7 +33,6 @@ import {asyncDigest} from './Hash';
 import {aesCipher, aesGenerateKey, aesImportKey, getAlgorithmName,} from './aes';
 import {rsaCipher, rsaExportKey, rsaImportKey, rsaKeyGenerate} from './rsa';
 import {ec as EC} from 'elliptic'
-import * as u8a from 'uint8arrays';
 
 const exportKeySpki = async (
   key: CryptoKey,
@@ -452,13 +452,14 @@ export class Subtle {
     const ec = new EC(curveName);
     
     // extract public & private key buffers
-    const privateKeyBuffer = u8a.fromString(privateKeyJWK.d!, 'base64url');
-    const privateKey = ec.keyFromPrivate(privateKeyBuffer);
+    const privateKeyBuffer = base64urlToArrayBuffer(privateKeyJWK.d!.replace(/\.$/, ''))
+    const privateKey = ec.keyFromPrivate(privateKeyBuffer)
 
-    const publicKeyBuffer = u8a.concat([
-      u8a.fromString(publicKeyJWK.x!, 'base64url'),
-      u8a.fromString(publicKeyJWK.y!, 'base64url')
-    ]);
+    const publicKeyBuffer = this.concatArrays(
+        0x04,
+        base64urlToArrayBuffer(publicKeyJWK.x!.replace(/\.$/, '')),
+        base64urlToArrayBuffer(publicKeyJWK.y!.replace(/\.$/, ''))
+    )
     const publicKey = ec.keyFromPublic(publicKeyBuffer);
 
     // Derive the shared secret
@@ -472,6 +473,12 @@ export class Subtle {
     new Uint8Array(result).set(derivedBits.slice(0, Math.ceil(length / 8)));
 
     return result;
+  }
+
+  private concatArrays = (...arrays: (number | number[])[]): number[] => {
+    return arrays.reduce<number[]>((acc, item) => {
+      return Array.isArray(item) ? [...acc, ...item] : [...acc, item]
+    }, [])
   }
 
   async encrypt(
