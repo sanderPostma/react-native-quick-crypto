@@ -1,4 +1,3 @@
-import type { HashAlgorithm, SubtleAlgorithm } from './keys';
 
 export enum HashContext {
   Node,
@@ -78,22 +77,21 @@ const kHashNames: HashNames = {
   }
 }
 
-export function normalizeHashName(
-  algo: string | HashAlgorithm | SubtleAlgorithm | undefined,
-  context: HashContext = HashContext.Node,
-): HashAlgorithm {
-  if (typeof algo !== 'undefined') {
-    if (typeof algo === 'object') {
-      algo = algo.name;
-    }
-    const normAlgo = algo.toString().toLowerCase();
-    try {
-      const alias = kHashNames[normAlgo]![context] as HashAlgorithm;
-      if (alias) return alias;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (_e) {
-      // ignore
-    }
+export function normalizeHashName(algo: string | { name?: string; toString?: () => string }, context = HashContext.Node): string {
+  if (algo == null) {
+    throw new Error('Invalid Hash Algorithm: undefined');
   }
+
+  const algoName = (typeof algo === 'string'
+      ? algo.toLowerCase()
+      : (algo.name?.toLowerCase() || algo.toString?.()?.toLowerCase() || ''));
+
+  const normAlgo = algoName.replace('-', '');
+  const hashNameEntry = kHashNames[normAlgo];
+  if (hashNameEntry) {
+    const alias = hashNameEntry[context];
+    if (alias) return alias;
+  }
+
   throw new Error(`Invalid Hash Algorithm: ${algo}`);
 }
