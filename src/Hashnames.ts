@@ -1,3 +1,4 @@
+import type { HashAlgorithm, SubtleAlgorithm } from './keys';
 
 export enum HashContext {
   Node,
@@ -77,7 +78,10 @@ const kHashNames: HashNames = {
   }
 }
 
-export function normalizeHashName(algo: string | { name?: string; toString?: () => string }, context = HashContext.Node): string {
+export function normalizeHashName(
+    algo: string | HashAlgorithm | SubtleAlgorithm | undefined,
+    context: HashContext = HashContext.Node,
+): HashAlgorithm {
   if (algo == null) {
     throw new Error('Invalid Hash Algorithm: undefined');
   }
@@ -90,7 +94,7 @@ export function normalizeHashName(algo: string | { name?: string; toString?: () 
   const hashNameEntry = kHashNames[normAlgo];
   if (hashNameEntry) {
     const alias = hashNameEntry[context];
-    if (alias) return alias;
+    if (alias) return alias as HashAlgorithm;
   }
 
   throw new Error(`Invalid Hash Algorithm: ${algo}`);
