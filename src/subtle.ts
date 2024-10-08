@@ -452,12 +452,12 @@ export class Subtle {
     const ec = new EC(curveName);
     
     // extract public & private key buffers
-    const privateKeyBuffer = u8a.fromString(privateKeyJWK.d, 'base64url');
+    const privateKeyBuffer = u8a.fromString(privateKeyJWK.d!, 'base64url');
     const privateKey = ec.keyFromPrivate(privateKeyBuffer);
 
     const publicKeyBuffer = u8a.concat([
-      u8a.fromString(publicKeyJWK.x, 'base64url'),
-      u8a.fromString(publicKeyJWK.y, 'base64url')
+      u8a.fromString(publicKeyJWK.x!, 'base64url'),
+      u8a.fromString(publicKeyJWK.y!, 'base64url')
     ]);
     const publicKey = ec.keyFromPublic(publicKeyBuffer);
 

@@ -1,6 +1,6 @@
 {
   "name": "@sphereon/react-native-quick-crypto",
-  "version": "0.7.5",
+  "version": "0.7.5.sph2",
   "description": "A fast implementation of Node's `crypto` module written in C/C++ JSI",
   "packageManager": "bun@1.1.26",
   "main": "lib/commonjs/index",
@@ -71,7 +71,7 @@
     "string_decoder": "^1.3.0",
     "util": "^0.12.5",
     "elliptic": "^6.5.7",
-    "uint8arrays": "^5.1.0",
+    "uint8arrays": "^3.1.1",
     "text-encoding": "^0.7.0"
   },
   "devDependencies": {
