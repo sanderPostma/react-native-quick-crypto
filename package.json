@@ -33,7 +33,7 @@
     "format": "prettier --check \"**/*.{js,ts,tsx}\"",
     "format-fix": "prettier --write \"**/*.{js,ts,tsx}\"",
     "prepare": "bob build",
-    "release": "release-it",
+    "release": "release-it --no-git.requireUpstream",
     "example": "cd example && bun start",
     "pods": "cd example && bun install && bun pods",
     "bootstrap": "bun install && bun pods && bun example",
