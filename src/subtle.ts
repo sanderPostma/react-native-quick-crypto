@@ -1,40 +1,38 @@
-import { Buffer as SBuffer } from 'safe-buffer';
+import {Buffer as SBuffer} from 'safe-buffer';
 import {
-  type ImportFormat,
-  type SubtleAlgorithm,
-  type KeyUsage,
-  CryptoKey,
-  KWebCryptoKeyFormat,
-  createSecretKey,
-  type AnyAlgorithm,
-  type JWK,
-  type CryptoKeyPair,
-  CipherOrWrapMode,
-  type EncryptDecryptParams,
   type AesKeyGenParams,
+  type AnyAlgorithm,
+  CipherOrWrapMode,
+  createSecretKey,
+  CryptoKey,
+  type CryptoKeyPair,
+  ellipticCurveAliases,
+  type EncryptDecryptParams,
+  type ImportFormat,
+  type JWK,
+  type KeyUsage,
+  KWebCryptoKeyFormat,
+  type SubtleAlgorithm,
 } from './keys';
 import {
-  hasAnyNotIn,
-  type BufferLike,
   type BinaryLike,
-  normalizeAlgorithm,
-  lazyDOMException,
-  normalizeHashName,
+  type BufferLike,
+  bufferLikeToArrayBuffer,
+  hasAnyNotIn,
   HashContext,
+  lazyDOMException,
+  normalizeAlgorithm,
+  normalizeHashName,
   type Operation,
   validateMaxBufferLength,
-  bufferLikeToArrayBuffer,
 } from './Utils';
-import { ecImportKey, ecExportKey, ecGenerateKey, ecdsaSignVerify } from './ec';
-import { pbkdf2DeriveBits } from './pbkdf2';
-import { asyncDigest } from './Hash';
-import {
-  aesCipher,
-  aesGenerateKey,
-  aesImportKey,
-  getAlgorithmName,
-} from './aes';
-import { rsaCipher, rsaExportKey, rsaImportKey, rsaKeyGenerate } from './rsa';
+import {ecdsaSignVerify, ecExportKey, ecGenerateKey, ecImportKey} from './ec';
+import {pbkdf2DeriveBits} from './pbkdf2';
+import {asyncDigest} from './Hash';
+import {aesCipher, aesGenerateKey, aesImportKey, getAlgorithmName,} from './aes';
+import {rsaCipher, rsaExportKey, rsaImportKey, rsaKeyGenerate} from './rsa';
+import {ec as EC} from 'elliptic'
+import * as u8a from 'uint8arrays';
 
 const exportKeySpki = async (
   key: CryptoKey,
@@ -417,9 +415,8 @@ export class Subtle {
       //   // Fall through
       // case 'X448':
       //   // Fall through
-      // case 'ECDH':
-      //   return require('internal/crypto/diffiehellman')
-      //     .ecdhDeriveBits(algorithm, baseKey, length);
+       case 'ECDH':
+         return this.ecdhDeriveBits(algorithm, baseKey, length)
       // case 'HKDF':
       //   return require('internal/crypto/hkdf')
       //     .hkdfDeriveBits(algorithm, baseKey, length);
@@ -429,6 +426,52 @@ export class Subtle {
     throw new Error(
       `'subtle.deriveBits()' for ${algorithm.name} is not implemented.`,
     );
+  }
+  
+  private async ecdhDeriveBits(algorithm:SubtleAlgorithm, baseKey:CryptoKey, length:number) {
+    // Ensure the algorithm has a 'public' property
+    if (!algorithm.public || !algorithm.public.keyObject) {
+      throw new Error("Algorithm must have a 'public' property of type CryptoKey");
+    }
+
+    // Get the curve name from baseKey.algorithm.namedCurve
+    const namedCurve = baseKey.algorithm.namedCurve;
+    if (!namedCurve) {
+      throw new Error("Algorithm must have a 'namedCurve' property of type CryptoKey");
+    }
+
+    // Check if the public key is provided in the algorithm object
+    if (!algorithm.public || !algorithm.public.keyObject) {
+      throw new Error('Missing public key in algorithm for ECDH');
+    }
+    const curveName = ellipticCurveAliases[namedCurve] || namedCurve;
+
+    const privateKeyJWK = exportKeyJWK(baseKey) as JWK;
+    const publicKeyJWK = exportKeyJWK(algorithm.public) as JWK;
+
+    const ec = new EC(curveName);
+    
+    // extract public & private key buffers
+    const privateKeyBuffer = u8a.fromString(privateKeyJWK.d, 'base64url');
+    const privateKey = ec.keyFromPrivate(privateKeyBuffer);
+
+    const publicKeyBuffer = u8a.concat([
+      u8a.fromString(publicKeyJWK.x, 'base64url'),
+      u8a.fromString(publicKeyJWK.y, 'base64url')
+    ]);
+    const publicKey = ec.keyFromPublic(publicKeyBuffer);
+
+    // Derive the shared secret
+    const sharedSecret = privateKey.derive(publicKey.getPublic());
+
+    // Convert the shared secret to a Buffer of the correct length (Big Endian)
+    const derivedBits = sharedSecret.toArrayLike(Buffer, 'be', Math.ceil(length / 8));
+
+    // Ensure we return exactly the requested number of bits
+    const result = new ArrayBuffer(Math.ceil(length / 8));
+    new Uint8Array(result).set(derivedBits.slice(0, Math.ceil(length / 8)));
+
+    return result;
   }
 
   async encrypt(

@@ -15,6 +15,12 @@ export const kNamedCurveAliases = {
   'P-521': 'secp521r1',
 } as const;
 
+export const ellipticCurveAliases = {
+  'P-256': 'p256',
+  'P-384': 'p384',
+  'P-521': 'p521',
+} as const;
+
 export type NamedCurve = 'P-256' | 'P-384' | 'P-521';
 
 export type ImportFormat = 'raw' | 'pkcs8' | 'spki' | 'jwk';
@@ -124,6 +130,7 @@ export type SubtleAlgorithm = {
   length?: number;
   modulusLength?: number;
   publicExponent?: number | Uint8Array;
+  public?: CryptoKey;
 };
 
 export type KeyUsage =
