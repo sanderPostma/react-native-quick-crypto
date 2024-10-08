@@ -1,6 +1,6 @@
 {
   "name": "@sphereon/react-native-quick-crypto",
-  "version": "0.7.5-sph.1",
+  "version": "0.7.5",
   "description": "A fast implementation of Node's `crypto` module written in C/C++ JSI",
   "packageManager": "bun@1.1.26",
   "main": "lib/commonjs/index",
@@ -59,8 +59,10 @@
     "url": "https://github.com/margelo/react-native-quick-crypto/issues"
   },
   "homepage": "https://github.com/margelo/react-native-quick-crypto#readme",
+  "private": false,
   "publishConfig": {
-    "registry": "https://registry.npmjs.org/"
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
   },
   "dependencies": {
     "@craftzdog/react-native-buffer": "^6.0.5",
